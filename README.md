@@ -1,1 +1,1 @@
-This repo demonstrates how to use baic shell commands
+A script that prints the absolute path name of the current working directory
