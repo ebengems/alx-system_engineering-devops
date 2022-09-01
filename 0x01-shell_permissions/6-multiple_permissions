@@ -1,2 +1,2 @@
-hmod +114 hello
-footer
+#!/bin/bash
+chmod +114 hello
