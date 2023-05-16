@@ -1,0 +1,60 @@
+POSTMORTEM
+
+Any software system can eventually malfunction, and this malfunction could be caused by a variety of different things, including bugs, traffic peaks, security concerns, hardware problems, natural disasters, and human error. Failure is common, and it actually presents a fantastic opportunity to grow and learn. Any great software engineer must learn from their errors in order to prevent future ones. Failure is OK, but failing again on the same problem is not.
+
+An effective tool in the technology sector is the postmortem. The team(s) in charge of the system will create a summary following any outage with the following two objectives:
+
+to make information on the cause of the outage easily accessible to the rest of the staff at the company. Managers and executives must comprehend what transpired and how it will affect their work because outages frequently have a significant negative impact on a firm.
+
+Moreover, to guarantee that the underlying cause(s) of the outage have been identified and that steps have been made to assure that it will be remedied.
+
+An example of a made-up incident report is provided below:
+
+Issue Synopsis
+
+The event will begin at 8:30 AM on May 16 and end at 11:00 AM.
+
+Every user's access to the WordPress page was being denied since it was returning a 500 status code. The internal website server might have been damaged or corrupted.
+
+Typo in a WordPress settings document was the primary culprit.
+
+
+Timeline
+
+Several customers noticed the problem on 05/16/23 at 9:05 AM and contacted customer service.
+
+The problem was escalated to the System Engineering team and the SRE at 9:20 AM on May 16, 2023
+They used 'ps aux' to check the server's running processes around 9:25 AM on May 16 to see whether any unwanted child processes were preventing the server from responding.
+
+
+05/16/23 9:30 AM — The team used'strace' on a few process ids, including those of apache2 (the webserver hosting the WordPress page), after confirming that the processes appeared to be operating normally.
+
+The second apache2 process was stuck after calling the system call accept4() at 05/16/23 9:40 AM, and strace on one of the apache2 processes revealed an infinite loop of system calls.
+
+05/16/23 9:45 AM — The team discovered strace was showing a large number of failures while executing it on that second apache2 process while using curl on the page's IP. The absence of the file index.html was one issue, but this was a false positive since putting the files to the WordPress directories didn't seem to fix the problem.
+
+05/16/23 9:50 AM — The team noticed that one of the problems in the strace output noted that a file was missing: apache2 appeared to be trying to access a file with the suffix ".phpp," which is not typically used for files.
+
+05/16/23 9:55 AM — Line 128 of the /var/www/html/wp-settings.php WordPress settings file was attempting to require the incorrect file. The team simply eliminated the extra "p" at the end of the extension going forward.
+
+The team just needed to restart apache2 using'service apache2 restart' at 10:00 AM on May 16, 2023. The page returned to being active as expected.
+
+Root cause and solution:
+
+There was a spelling error that prevented apache2 from functioning properly in the WordPress settings file.
+
+By fixing the misspelling and restarting apache2, the problem was avoided.
+
+Corrective and preventative actions:
+
+In order to prevent the injection of minor mistakes like the one that occurred in this occurrence, setting files should only have write permissions for the SRE.
+
+
+
+TODO:
+
+Set the team's access to /var/www/html/wp-settings.php to read-only.
+
+Read through each configuration file carefully to check for additional errors of that nature.
+
+
